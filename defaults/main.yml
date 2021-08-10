@@ -1,0 +1,21 @@
+---
+# defaults file mediawiki_extension
+
+# Shall the extension be installed but disabled in LocalSettings.php
+mediawiki_extension_disabled: false
+mediawiki_extension_disabled_comment: ""
+
+# The webserver document root taken from ansible-role-mediawiki
+mediawiki_extension_docroot: "{{ mediawiki_docroot }}"
+
+# The extension registration type
+mediawiki_extension_registration_type: "wfLoadExtension"
+
+# Install the extension either via "composer", "git" or "tar"
+mediawiki_extension_install_type: "composer"
+
+# Strip NUMBER leading components from file names on extraction
+mediawiki_extension_strip_components: 1
+
+# Any extension specific configuration that should be added to LocalSettings after extension registration
+mediawiki_extension_config: ""

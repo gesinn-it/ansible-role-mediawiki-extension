@@ -1,0 +1,107 @@
+---
+
+- name: import assert.yml
+  ansible.builtin.import_tasks: assert.yml
+  run_once: yes
+  delegate_to: localhost
+
+# TODO: use mediawiki_extension_requirements
+- name: install requirements
+  ansible.builtin.package:
+    # name: "{{ mediawiki_extension_requirements }}"
+    name: "zip"
+    state: present
+
+######################################
+# COMPOSER                           #
+######################################
+- name: run composer require
+  ansible.builtin.command:
+    chdir: "{{ mediawiki_docroot }}/{{ mediawiki_name }}"
+    cmd: "composer require --no-update {{ mediawiki_extension_source }} {{ mediawiki_extension_source_version }}"
+  environment:
+    COMPOSER: composer.local.json
+    COMPOSER_PROCESS_TIMEOUT: 600
+  when: mediawiki_extension_install_type == "composer"
+
+- name: run composer update
+  ansible.builtin.command:
+    chdir: "{{ mediawiki_docroot }}/{{ mediawiki_name }}"
+    cmd: "composer update --no-dev"
+  environment:
+    COMPOSER_PROCESS_TIMEOUT: 600
+  when: mediawiki_extension_install_type == "composer"
+
+######################################
+# GIT                                #
+######################################
+# TODO: implement installation from git
+
+######################################
+# TAR                                #
+######################################
+- name: download tar archive
+  ansible.builtin.get_url:
+    url: "{{ mediawiki_extension_source }}"
+    dest: "{{ mediawiki_docroot }}/{{ mediawiki_name }}/extensions"
+  when: mediawiki_extension_install_type == "tar"
+  register: tar_result
+
+- name: set fact for tar destination after download
+  set_fact: mediawiki_extension_tar_dest="{{ tar_result.dest }}"
+  when: mediawiki_extension_install_type == "tar"
+
+- name: ensure extension directory exists
+  ansible.builtin.file:
+    path: "{{ mediawiki_docroot }}/{{ mediawiki_name }}/extensions/{{ mediawiki_extension_name }}"
+    state: directory
+    mode: '0755'
+  when: mediawiki_extension_install_type == "tar"
+
+- name: extract tar archive
+  ansible.builtin.command:
+    chdir: "{{ mediawiki_docroot }}/{{ mediawiki_name }}/extensions"
+    cmd: "tar -xzf {{ mediawiki_extension_tar_dest }} --strip-components={{ mediawiki_extension_strip_components }} -C {{ mediawiki_docroot }}/{{ mediawiki_name }}/extensions/{{ mediawiki_extension_name }}"
+    warn: false
+  when: mediawiki_extension_install_type == "tar"
+
+
+######################################
+# REGISTER                           #
+######################################
+- set_fact:
+    mediawiki_extension_disabled_comment: "# "
+  when: mediawiki_extension_disabled == true
+
+- set_fact:
+    mediawiki_extension_disabled_comment: ""
+  when: mediawiki_extension_disabled == false
+
+- name: add extension to LocalSettings.php with wfLoadExtension
+  ansible.builtin.blockinfile:
+    path: "{{ mediawiki_destination }}/{{ mediawiki_name }}/LocalSettings.php"
+    marker_begin: "\n# ----- {{ mediawiki_extension_name }} BEGIN"
+    marker_end: "# ----- {{ mediawiki_extension_name }} END"
+    marker: " {mark} -----"
+    block: |
+      {{ mediawiki_extension_disabled_comment }}wfLoadExtension( '{{ mediawiki_extension_name }}' );
+      {{ mediawiki_extension_config }}
+  when: mediawiki_extension_registration_type == "wfLoadExtension"
+
+- name: add extension to LocalSettings.php with require_once
+  ansible.builtin.blockinfile:
+    path: "{{ mediawiki_destination }}/{{ mediawiki_name }}/LocalSettings.php"
+    marker_begin: "\n# ----- {{ mediawiki_extension_name }} BEGIN"
+    marker_end: "# ----- {{ mediawiki_extension_name }} END"
+    marker: " {mark} -----"
+    block: |
+      {{ mediawiki_extension_disabled_comment }}require_once( '$IP/extensions/{{ mediawiki_extension_name }}/{{ mediawiki_extension_name }}.php' );
+      {{ mediawiki_extension_config }}
+  when: mediawiki_extension_registration_type == "require_once"
+
+######################################
+# RUN UPDATE.PHP                     #
+######################################
+- name: run update.php
+  ansible.builtin.shell:
+    cmd: php {{ mediawiki_destination }}/{{ mediawiki_name }}/maintenance/update.php

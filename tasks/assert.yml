@@ -1,0 +1,40 @@
+---
+- name: test if mediawiki_extension_name is set
+  ansible.builtin.assert:
+    that:
+      - mediawiki_extension_name is defined
+      - mediawiki_extension_name is string
+    quiet: yes
+    fail_msg: "Make sure, mediawiki_extension_name is set"
+
+- name: test if mediawiki_extension_registration_type is one of wfLoadExtension, require_once
+  ansible.builtin.assert:
+    that:
+      - mediawiki_extension_registration_type is defined
+      - mediawiki_extension_registration_type in ['wfLoadExtension', 'require_once']
+    quiet: yes
+    fail_msg: "Make sure, mediawiki_extension_registration_type is set and one of wfLoadExtension, require_once. Found: {{ mediawiki_extension_registration_type }}."
+
+- name: test if mediawiki_extension_install_type is one of composer, git, tar
+  ansible.builtin.assert:
+    that:
+      - mediawiki_extension_install_type is defined
+      - mediawiki_extension_install_type in ['composer', 'git', 'tar']
+    quiet: yes
+    fail_msg: "Make sure, mediawiki_extension_install_type is set and one of composer, git, tar. Found: {{ mediawiki_extension_install_type }}."
+
+- name: test if mediawiki_extension_strip_components is an integer > 0
+  ansible.builtin.assert:
+    that:
+      - mediawiki_extension_strip_components is defined
+      - mediawiki_extension_strip_components >= 0
+    quiet: yes
+    fail_msg: "Make sure, mediawiki_extension_strip_components >= 0. Found: {{ mediawiki_extension_strip_components }}."
+
+- name: test if mediawiki_extension_disabled is set
+  ansible.builtin.assert:
+    that:
+      - mediawiki_extension_disabled is defined
+      - mediawiki_extension_disabled is boolean
+    quiet: yes
+    fail_msg: "Make sure, mediawiki_extension_disabled is set and either true or false."
