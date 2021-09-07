@@ -95,7 +95,7 @@
     marker_end: "# ----- {{ mediawiki_extension_name }} END"
     marker: " {mark} -----"
     block: |
-      {{ mediawiki_extension_disabled_comment }}require_once( '$IP/extensions/{{ mediawiki_extension_name }}/{{ mediawiki_extension_name }}.php' );
+      {{ mediawiki_extension_disabled_comment }}require_once( "$IP/extensions/{{ mediawiki_extension_name }}/{{ mediawiki_extension_name }}.php" );
       {{ mediawiki_extension_config }}
   when: mediawiki_extension_registration_type == "require_once"
 
