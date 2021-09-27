@@ -17,7 +17,7 @@
 ######################################
 - name: run composer require
   ansible.builtin.command:
-    chdir: "{{ mediawiki_docroot }}/{{ mediawiki_name }}"
+    chdir: "{{ mediawiki_install_path }}"
     cmd: "composer require --no-update {{ mediawiki_extension_source }} {{ mediawiki_extension_source_version }}"
   environment:
     COMPOSER: composer.local.json
@@ -26,7 +26,7 @@
 
 - name: run composer update
   ansible.builtin.command:
-    chdir: "{{ mediawiki_docroot }}/{{ mediawiki_name }}"
+    chdir: "{{ mediawiki_install_path }}"
     cmd: "composer update --no-dev"
   environment:
     COMPOSER_PROCESS_TIMEOUT: 600
@@ -43,7 +43,7 @@
 - name: download tar archive
   ansible.builtin.get_url:
     url: "{{ mediawiki_extension_source }}"
-    dest: "{{ mediawiki_docroot }}/{{ mediawiki_name }}/extensions"
+    dest: "{{ mediawiki_install_path }}/extensions"
   when: mediawiki_extension_install_type == "tar"
   register: tar_result
 
@@ -53,15 +53,15 @@
 
 - name: ensure extension directory exists
   ansible.builtin.file:
-    path: "{{ mediawiki_docroot }}/{{ mediawiki_name }}/extensions/{{ mediawiki_extension_name }}"
+    path: "{{ mediawiki_install_path }}/extensions/{{ mediawiki_extension_name }}"
     state: directory
     mode: '0755'
   when: mediawiki_extension_install_type == "tar"
 
 - name: extract tar archive
   ansible.builtin.command:
-    chdir: "{{ mediawiki_docroot }}/{{ mediawiki_name }}/extensions"
-    cmd: "tar -xzf {{ mediawiki_extension_tar_dest }} --strip-components={{ mediawiki_extension_strip_components }} -C {{ mediawiki_docroot }}/{{ mediawiki_name }}/extensions/{{ mediawiki_extension_name }}"
+    chdir: "{{ mediawiki_install_path }}/extensions"
+    cmd: "tar -xzf {{ mediawiki_extension_tar_dest }} --strip-components={{ mediawiki_extension_strip_components }} -C {{ mediawiki_install_path }}/extensions/{{ mediawiki_extension_name }}"
     warn: false
   when: mediawiki_extension_install_type == "tar"
 
@@ -79,7 +79,7 @@
 
 - name: add extension to LocalSettings.php with wfLoadExtension
   ansible.builtin.blockinfile:
-    path: "{{ mediawiki_destination }}/{{ mediawiki_name }}/LocalSettings.php"
+    path: "{{ mediawiki_install_path }}/LocalSettings.php"
     marker_begin: "\n# ----- {{ mediawiki_extension_name }} BEGIN"
     marker_end: "# ----- {{ mediawiki_extension_name }} END"
     marker: " {mark} -----"
@@ -90,7 +90,7 @@
 
 - name: add extension to LocalSettings.php with require_once
   ansible.builtin.blockinfile:
-    path: "{{ mediawiki_destination }}/{{ mediawiki_name }}/LocalSettings.php"
+    path: "{{ mediawiki_install_path }}/LocalSettings.php"
     marker_begin: "\n# ----- {{ mediawiki_extension_name }} BEGIN"
     marker_end: "# ----- {{ mediawiki_extension_name }} END"
     marker: " {mark} -----"
@@ -104,4 +104,4 @@
 ######################################
 - name: run update.php
   ansible.builtin.shell:
-    cmd: php {{ mediawiki_destination }}/{{ mediawiki_name }}/maintenance/update.php
+    cmd: php {{ mediawiki_install_path }}/maintenance/update.php
